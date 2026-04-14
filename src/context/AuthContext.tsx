@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .maybeSingle();
     setProfile(data as Profile | null);
+    console.log('Fetched profile:', userId);
   }
 
   async function refreshProfile() {
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const isAdmin = profile?.role === 'admin';
-
+  console.log('AuthContext:', { session, user, profile, loading, isAdmin });
   return (
     <AuthContext.Provider value={{ session, user, profile, loading, isAdmin, signOut, refreshProfile }}>
       {children}
