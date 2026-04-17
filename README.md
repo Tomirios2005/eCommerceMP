@@ -1,73 +1,114 @@
-# React + TypeScript + Vite
+🛒 E-commerce Full Stack
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación de e-commerce full stack con arquitectura flexible que permite elegir entre dos backends:
 
-Currently, two official plugins are available:
+🚀 Backend propio con Node.js + Express + Prisma
+⚡ Backend serverless usando Supabase
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El frontend está desarrollado con React y maneja autenticación, carrito, órdenes y roles de usuario.
 
-## React Compiler
+🧱 Tecnologías
+Frontend
+⚛️ React
+🟦 TypeScript
+🧠 Context API (Auth & Cart)
+🔗 Fetch API
+Backend (modo Express)
+🟢 Node.js
+🚂 Express
+🗄️ Prisma ORM
+🐘 PostgreSQL (Supabase)
+🔐 JWT
+Backend (modo Supabase)
+🔥 Supabase Auth
+🗄️ Supabase Database
+🔐 JWT automático (gestionado por Supabase)
+⚙️ Configuración
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+El proyecto soporta dos modos de backend, configurables desde el .env.
 
-## Expanding the ESLint configuration
+📁 Variables de entorno
+🔹 Frontend
+VITE_API_URL=http://localhost:3001/api
+VITE_USE_SUPABASE=true
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+🔹 Backend (Express)
+DATABASE_URL=postgresql://usuario:password@host:puerto/db
+JWT_SECRET=tu_jwt_secret
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+PORT=3001
+CORS_ORIGIN=http://localhost:5173
+🔹 Backend (Supabase)
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_PUBLISHABLE_KEY=tu_publishable_key
+🔀 Selección de backend
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+El comportamiento del sistema depende de:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+VITE_USE_SUPABASE=true | false
+Valor	Backend utilizado
+true	Supabase
+false	Express
+🔐 Autenticación
+Con Supabase
+Login y registro gestionados por Supabase
+Tokens JWT automáticos
+Validación en backend con:
+supabase.auth.getUser(token)
+Con Express
+Autenticación propia con JWT
+Middleware de protección de rutas
+Ejemplo:
+jwt.verify(token, process.env.JWT_SECRET)
+🧠 Arquitectura
+Frontend (React)
+│
+├── AuthContext → Manejo de sesión
+├── CartContext → Carrito global
+│
+├── API Layer
+│   ├── Si USE_SUPABASE → Supabase SDK
+│   └── Si NO → Fetch a Express API
+│
+Backend
+│
+├── Express API (opcional)
+│   ├── Auth middleware
+│   ├── Rutas: /cart, /orders, /products
+│   └── Prisma ORM
+│
+└── Supabase (alternativa)
+    ├── Auth
+    ├── DB
+    └── Policies
+🛒 Funcionalidades
+✅ Registro y login de usuarios
+✅ Roles (admin / user)
+✅ Carrito de compras
+✅ Órdenes
+✅ Persistencia en base de datos
+✅ Protección de rutas
+✅ Backend intercambiable
+🧪 Desarrollo
+Instalar dependencias
+npm install
+Frontend
+npm run dev
+Backend (Express)
+node index.js
+⚠️ Consideraciones
+El backend Express requiere configuración manual de JWT
+Supabase simplifica autenticación pero limita control backend
+No mezclar ambos sistemas de auth al mismo tiempo
+🚀 Próximas mejoras
+💳 Integración con pagos (Stripe / MercadoPago)
+📦 Gestión de stock
+📊 Panel admin avanzado
+🔄 Refresh tokens automático
+🧾 Historial de compras
+📌 Autor
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Tomás Ríos
+Desarrollador Full Stack
+Argentina 🇦🇷
