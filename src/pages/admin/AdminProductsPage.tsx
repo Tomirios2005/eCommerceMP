@@ -41,7 +41,7 @@ export default function AdminProductsPage() {
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase.from('products').select('*, category:categories(id,name,slug,description,created_at)').order('created_at', { ascending: false });
+    let query = supabase.from('products').select('*, category:categories(id,name)').order('created_at', { ascending: false });
     if (search) query = query.ilike('name', `%${search}%`);
     const { data } = await query;
     if (data) setProducts(data as Product[]);

@@ -35,21 +35,14 @@ export interface Database {
         Row: {
           id: string;
           name: string;
-          slug: string;
-          description: string;
-          created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
-          slug: string;
-          description?: string;
-          created_at?: string;
         };
         Update: {
           name?: string;
-          slug?: string;
-          description?: string;
+
         };
       };
       products: {

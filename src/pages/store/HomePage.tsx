@@ -29,7 +29,7 @@ export default function HomePage() {
     setLoading(true);
     let query = supabase
       .from('products')
-      .select('*, category:categories(id,name,slug,description,created_at), images:product_images(*)')
+      .select('*, category:categories(id,name), images:product_images(*)')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 

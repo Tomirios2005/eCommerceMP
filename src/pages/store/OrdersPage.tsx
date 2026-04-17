@@ -16,6 +16,11 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import type { Order } from '../../lib/types';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
 const statusConfig: Record<string, {
   label: string;
@@ -68,7 +73,31 @@ export default function OrdersPage() {
       const t = setTimeout(loadOrders, 3000);
       return () => clearTimeout(t);
     }
-  }, [paymentStatus, loadOrders]);
+  }, [paymentStatus, loadOrders, ]);
+  const [openDialog, setOpenDialog] = useState(false);
+const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const handleCancel = async (order: Order) => {
+  if (!session) {
+    navigate('/login');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', order.id);
+
+  if (!error) {
+    setOrders(prev =>
+      prev.map(o =>
+        o.id === order.id ? { ...o, status: 'cancelled' } : o
+      )
+    );
+  }
+
+  loadOrders();
+};
 
   // ── Pay / retry payment ────────────────────────────────────────────────────
   const handlePay = async (order: Order) => {
@@ -130,6 +159,7 @@ export default function OrdersPage() {
   }
 
   return (
+    <>
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         Mis Pedidos
@@ -232,6 +262,7 @@ export default function OrdersPage() {
                     </Box>
 
                     {isPending && (
+                      <>
                       <Button
                         variant="contained"
                         color="warning"
@@ -242,6 +273,17 @@ export default function OrdersPage() {
                       >
                         {isPaying ? 'Redirigiendo…' : 'Completar pago'}
                       </Button>
+                     <Button
+  color="error"
+  onClick={() => {
+    setSelectedOrder(order);
+    setOpenDialog(true);
+  }}
+>
+  Cancelar
+</Button>
+
+                      </>
                     )}
                   </Box>
                 </CardContent>
@@ -251,5 +293,35 @@ export default function OrdersPage() {
         </Box>
       )}
     </Container>
+    <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <DialogTitle>Cancelar pedido</DialogTitle>
+
+      <DialogContent>
+        <DialogContentText>
+          ¿Estás seguro que querés cancelar este pedido?
+        </DialogContentText>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={() => setOpenDialog(false)}>
+          Volver
+        </Button>
+
+        <Button
+          color="error"
+          variant="contained"
+          onClick={async () => {
+            if (selectedOrder) {
+              await handleCancel(selectedOrder);
+            }
+            setOpenDialog(false);
+          }}
+        >
+          Sí, cancelar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  </>
+    
   );
 }
