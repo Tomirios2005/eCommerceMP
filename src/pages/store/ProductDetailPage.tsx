@@ -14,9 +14,9 @@ import TextField from '@mui/material/TextField';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import { supabase } from '../../lib/supabase';
 import type { Product } from '../../lib/types';
 import { useCart } from '../../context/CartContext';
+import { getProductBySlug } from '../../services/productService';
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -30,19 +30,13 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!slug) return;
-    supabase
-      .from('products')
-      .select('*, category:categories(*), images:product_images(*)')
-      .eq('slug', slug)
-      .eq('is_active', true)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setProduct(data as Product);
-          setSelectedImage(data.main_image);
-        }
-        setLoading(false);
-      });
+    getProductBySlug(slug).then(data => {
+      if (data) {
+        setProduct(data);
+        setSelectedImage(data.main_image);
+      }
+      setLoading(false);
+    });
   }, [slug]);
 
   const handleAddToCart = () => {

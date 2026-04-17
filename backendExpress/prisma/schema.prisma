@@ -1,0 +1,138 @@
+generator client {
+  provider        = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "auth"]
+}
+
+//////////////////////////////////////////////////////
+// AUTH (mínimo necesario)
+//////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////
+// APP
+//////////////////////////////////////////////////////
+
+model profiles {
+  id         String    @id @db.Uuid
+  email      String
+  full_name  String?   @default("")
+  avatar_url String?   @default("")
+  role       String    @default("user")
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+
+  @@schema("public")
+}
+
+model categories {
+  id       String     @id @default(uuid())
+  name     String
+
+  products products[]
+
+  @@schema("public")
+}
+
+model products {
+  id             String    @id @default(uuid())
+  name           String
+  slug           String    @unique
+  description    String?   @default("")
+  price          Decimal   @default(0)
+  compare_price  Decimal?
+  stock          Int       @default(0)
+  sku            String?   @default("")
+  main_image     String?   @default("")
+  is_active      Boolean   @default(true)
+
+  category_id    String?
+  categories     categories? @relation(fields: [category_id], references: [id])
+
+  created_at     DateTime? @default(now())
+  updated_at     DateTime? @default(now())
+
+  cart_items     cart_items[]
+  order_items    order_items[]
+  product_images product_images[]
+
+  @@index([category_id])
+  @@index([is_active])
+  @@schema("public")
+}
+
+model product_images {
+  id         String    @id @default(uuid())
+  product_id String
+  url        String
+  alt        String?   @default("")
+  sort_order Int       @default(0)
+  created_at DateTime? @default(now())
+
+  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@schema("public")
+}
+
+model cart_items {
+  id         String    @id @default(uuid())
+  user_id    String
+  product_id String
+  quantity   Int       @default(1)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  products products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id])
+  @@index([user_id])
+  @@schema("public")
+}
+
+model orders {
+  id                        String    @id @default(uuid())
+  user_id                   String
+  status                    String    @default("pending")
+  total                     Decimal   @default(0)
+  subtotal                  Decimal   @default(0)
+  shipping_cost             Decimal   @default(0)
+  payment_id                String?   @default("")
+  payment_method            String?   @default("")
+  mercadopago_preference_id String?   @default("")
+  mercadopago_payment_id    String?   @default("")
+  shipping_address          Json?     @default("{}")
+  notes                     String?   @default("")
+  created_at                DateTime? @default(now())
+  updated_at                DateTime? @default(now())
+
+  order_items order_items[]
+
+  @@index([status])
+  @@index([user_id])
+  @@schema("public")
+}
+
+model order_items {
+  id            String    @id @default(uuid())
+  order_id      String
+  product_id    String?
+  product_name  String
+  product_image String?   @default("")
+  quantity      Int       @default(1)
+  unit_price    Decimal
+  total_price   Decimal
+  created_at    DateTime? @default(now())
+
+  orders   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  products products? @relation(fields: [product_id], references: [id])
+
+  @@index([order_id])
+  @@schema("public")
+}

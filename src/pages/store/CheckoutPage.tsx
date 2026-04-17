@@ -16,6 +16,7 @@ import { supabase } from "../../lib/supabase";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import type { ShippingAddress } from "../../lib/types";
+import { createOrder, createPaymentPreference } from "../../services/orderService";
 
 const SHIPPING_COST = 500;
 
@@ -47,7 +48,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user)           { navigate("/login"); return; }
+    if (!user)              { navigate("/login"); return; }
     if (items.length === 0) return;
 
     setLoading(true);
@@ -58,57 +59,30 @@ export default function CheckoutPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Sesión expirada. Volvé a iniciar sesión.");
 
-      // ── 2. Create order (validates stock atomically, decrements it) ─────────
-      const { data: orderId, error: orderError } = await supabase.rpc(
-        "create_order_with_stock",
-        {
-          p_user_id:       user.id,
-          p_total:         total,
-          p_subtotal:      subtotal,
-          p_shipping_cost: SHIPPING_COST,
-          p_address:       address,
-          p_items:         items.map(item => ({
-            product_id:    item.product.id,
-            product_name:  item.product.name,
-            product_image: item.product.main_image ?? "",
-            quantity:      item.quantity,
-            unit_price:    item.product.price,
-            total_price:   item.product.price * item.quantity,
-          })),
-        }
-      );
-
-      if (orderError) throw new Error(orderError.message);
-      if (!orderId)   throw new Error("Error al crear el pedido. Intentá de nuevo.");
+      // ── 2. Create order atomically (validates stock + decrements it) ────────
+      const orderId = await createOrder({
+        userId:       user.id,
+        total,
+        subtotal,
+        shippingCost: SHIPPING_COST,
+        address:      address as unknown as Record<string, string>,
+        items:        items.map(item => ({
+          product_id:    item.product.id,
+          product_name:  item.product.name,
+          product_image: item.product.main_image ?? "",
+          quantity:      item.quantity,
+          unit_price:    item.product.price,
+          total_price:   item.product.price * item.quantity,
+        })),
+      });
 
       // ── 3. Create Mercado Pago preference ───────────────────────────────────
-      const mpResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-mercadopago-preference`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey:         import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization:  `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ orderId, items, total }),
-        }
-      );
-
-      if (!mpResponse.ok) {
-        const errData = await mpResponse.json().catch(() => ({ error: "Error de red" }));
-        throw new Error(errData.error || "Error al procesar el pago");
-      }
-
-      const mpData = await mpResponse.json();
+      const mpData = await createPaymentPreference(orderId, items, total, session.access_token);
 
       // ── 4. Clear cart then redirect to payment ──────────────────────────────
       await clearCart();
 
-      // Use sandbox URL in development, production URL otherwise
-      const initPoint = mpData.init_point;
-
-      window.location.href = initPoint;
+      window.location.href = mpData.init_point;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al procesar el pedido");
       setLoading(false);

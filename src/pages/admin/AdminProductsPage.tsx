@@ -28,42 +28,41 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { supabase } from '../../lib/supabase';
 import type { Product } from '../../lib/types';
+import { getAdminProducts, deleteProduct, toggleProductActive } from '../../services/productService';
 
 export default function AdminProductsPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
 
   const fetchProducts = async () => {
     setLoading(true);
-    let query = supabase.from('products').select('*, category:categories(id,name)').order('created_at', { ascending: false });
-    if (search) query = query.ilike('name', `%${search}%`);
-    const { data } = await query;
-    if (data) setProducts(data as Product[]);
+    const data = await getAdminProducts(search || undefined);
+    setProducts(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchProducts(); }, [search]);
+  useEffect(() => { fetchProducts(); }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from('products').delete().eq('id', deleteId);
-    setDeleteId(null);
-    if (error) {
-      setSnackbar({ open: true, message: 'Error al eliminar el producto', severity: 'error' });
-    } else {
+    try {
+      await deleteProduct(deleteId);
       setSnackbar({ open: true, message: 'Producto eliminado', severity: 'success' });
       fetchProducts();
+    } catch {
+      setSnackbar({ open: true, message: 'Error al eliminar el producto', severity: 'error' });
+    } finally {
+      setDeleteId(null);
     }
   };
 
   const handleToggleActive = async (product: Product) => {
-    await supabase.from('products').update({ is_active: !product.is_active }).eq('id', product.id);
+    await toggleProductActive(product.id, product.is_active);
     fetchProducts();
   };
 

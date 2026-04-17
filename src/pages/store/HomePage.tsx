@@ -8,9 +8,10 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
-import { supabase } from '../../lib/supabase';
 import type { Product, Category } from '../../lib/types';
 import ProductCard from '../../components/product/ProductCard';
+import { getProducts } from '../../services/productService';
+import { getCategories } from '../../services/categoryService';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,26 +21,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from('categories').select('*').then(({ data }) => {
-      if (data) setCategories(data as Category[]);
-    });
+    getCategories().then(data => setCategories(data));
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    let query = supabase
-      .from('products')
-      .select('*, category:categories(id,name), images:product_images(*)')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
-
-    if (selectedCategory) query = query.eq('category_id', selectedCategory);
-    if (search) query = query.ilike('name', `%${search}%`);
-
-    query.then(({ data }) => {
-      if (data) setProducts(data as Product[]);
-      setLoading(false);
-    });
+    getProducts({ category: selectedCategory ?? undefined, search: search || undefined })
+      .then(data => setProducts(data))
+      .finally(() => setLoading(false));
   }, [selectedCategory, search]);
 
   return (

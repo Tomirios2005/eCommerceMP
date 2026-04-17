@@ -21,47 +21,44 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import { supabase } from '../../lib/supabase';
 import type { Order, OrderStatus } from '../../lib/types';
+import { getAdminOrders, updateOrderStatus } from '../../services/orderService';
 
 const statusConfig: Record<string, { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' }> = {
-  pending: { label: 'Pendiente', color: 'warning' },
-  paid: { label: 'Pagado', color: 'info' },
-  processing: { label: 'Procesando', color: 'info' },
-  shipped: { label: 'Enviado', color: 'primary' },
-  delivered: { label: 'Entregado', color: 'success' },
-  cancelled: { label: 'Cancelado', color: 'error' },
-  refunded: { label: 'Reembolsado', color: 'default' },
+  pending:    { label: 'Pendiente',    color: 'warning' },
+  paid:       { label: 'Pagado',       color: 'info'    },
+  processing: { label: 'Procesando',   color: 'info'    },
+  shipped:    { label: 'Enviado',      color: 'primary' },
+  delivered:  { label: 'Entregado',    color: 'success' },
+  cancelled:  { label: 'Cancelado',    color: 'error'   },
+  refunded:   { label: 'Reembolsado',  color: 'default' },
 };
 
 const allStatuses: OrderStatus[] = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders,   setOrders]   = useState<Order[]>([]);
+  const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState<Order | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
 
   const fetchOrders = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('orders')
-      .select('*, items:order_items(*)')
-      .order('created_at', { ascending: false });
-    if (data) setOrders(data as Order[]);
+    const data = await getAdminOrders();
+    setOrders(data);
     setLoading(false);
   };
 
   useEffect(() => { fetchOrders(); }, []);
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
-    const { error } = await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', orderId);
-    if (error) {
-      setSnackbar({ open: true, message: 'Error al actualizar el estado', severity: 'error' });
-    } else {
+    try {
+      await updateOrderStatus(orderId, status);
       setSnackbar({ open: true, message: 'Estado actualizado', severity: 'success' });
       fetchOrders();
       if (selected?.id === orderId) setSelected(prev => prev ? { ...prev, status } : null);
+    } catch {
+      setSnackbar({ open: true, message: 'Error al actualizar el estado', severity: 'error' });
     }
   };
 
@@ -98,39 +95,37 @@ export default function AdminOrdersPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    orders.map(order => {
-                      return (
-                        <TableRow key={order.id} hover>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={500}>#{order.id.slice(0, 8).toUpperCase()}</Typography>
-                            <Typography variant="caption" color="text.secondary">{order.items?.length || 0} items</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{new Date(order.created_at).toLocaleDateString('es-AR')}</Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2" fontWeight={600}>${order.total.toLocaleString('es-AR')}</Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={order.status}
-                              onChange={e => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                              size="small"
-                              sx={{ fontSize: 13 }}
-                            >
-                              {allStatuses.map(s => (
-                                <MenuItem key={s} value={s}>{statusConfig[s].label}</MenuItem>
-                              ))}
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Button size="small" variant="outlined" onClick={() => setSelected(order)}>
-                              Detalle
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                    orders.map(order => (
+                      <TableRow key={order.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={500}>#{order.id.slice(0, 8).toUpperCase()}</Typography>
+                          <Typography variant="caption" color="text.secondary">{order.items?.length || 0} items</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{new Date(order.created_at).toLocaleDateString('es-AR')}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight={600}>${order.total.toLocaleString('es-AR')}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={order.status}
+                            onChange={e => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                            size="small"
+                            sx={{ fontSize: 13 }}
+                          >
+                            {allStatuses.map(s => (
+                              <MenuItem key={s} value={s}>{statusConfig[s].label}</MenuItem>
+                            ))}
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Button size="small" variant="outlined" onClick={() => setSelected(order)}>
+                            Detalle
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
                 </TableBody>
               </Table>

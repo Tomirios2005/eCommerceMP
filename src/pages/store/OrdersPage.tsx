@@ -13,7 +13,6 @@ import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PaymentIcon from '@mui/icons-material/Payment';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import type { Order } from '../../lib/types';
 import Dialog from '@mui/material/Dialog';
@@ -21,6 +20,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import { getOrders, cancelOrder, createPaymentPreference } from '../../services/orderService';
 
 const statusConfig: Record<string, {
   label: string;
@@ -46,22 +46,18 @@ export default function OrdersPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [orders,        setOrders]        = useState<Order[]>([]);
-  const [loading,       setLoading]       = useState(true);
-  const [payingId,      setPayingId]      = useState<string | null>(null);
-  const [payError,      setPayError]      = useState('');
+  const [orders,   setOrders]   = useState<Order[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [payError, setPayError] = useState('');
 
   const paymentStatus = searchParams.get('payment') as keyof typeof paymentAlerts | null;
 
   // ── Load orders ────────────────────────────────────────────────────────────
   const loadOrders = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('orders')
-      .select('*, items:order_items(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) setOrders(data as Order[]);
+    const data = await getOrders(user.id);
+    setOrders(data);
     setLoading(false);
   }, [user]);
 
@@ -73,31 +69,17 @@ export default function OrdersPage() {
       const t = setTimeout(loadOrders, 3000);
       return () => clearTimeout(t);
     }
-  }, [paymentStatus, loadOrders, ]);
-  const [openDialog, setOpenDialog] = useState(false);
-const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  }, [paymentStatus, loadOrders]);
+
+  const [openDialog,    setOpenDialog]    = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const handleCancel = async (order: Order) => {
-  if (!session) {
-    navigate('/login');
-    return;
-  }
-
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'cancelled' })
-    .eq('id', order.id);
-
-  if (!error) {
-    setOrders(prev =>
-      prev.map(o =>
-        o.id === order.id ? { ...o, status: 'cancelled' } : o
-      )
-    );
-  }
-
-  loadOrders();
-};
+    if (!session) { navigate('/login'); return; }
+    await cancelOrder(order.id);
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
+    loadOrders();
+  };
 
   // ── Pay / retry payment ────────────────────────────────────────────────────
   const handlePay = async (order: Order) => {
@@ -107,7 +89,6 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     setPayError('');
 
     try {
-      // Reconstruct CartItem shape from saved order_items
       const items = (order.items ?? []).map(item => ({
         product: {
           id:         item.product_id ?? '',
@@ -118,26 +99,14 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
         quantity: item.quantity,
       }));
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-mercadopago-preference`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey:         import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization:  `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ orderId: order.id, items, total: order.total }),
-        }
+      const data = await createPaymentPreference(
+        order.id,
+        items,
+        order.total,
+        session.access_token
       );
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Error de red' }));
-        throw new Error(err.error || 'Error al crear la preferencia de pago');
-      }
-
-      const data = await res.json();
-      const initPoint = import.meta.env.DEV ? data.sandbox_init_point : data.init_point;
+      const initPoint = import.meta.env.DEV ? (data.sandbox_init_point ?? data.init_point) : data.init_point;
       window.location.href = initPoint;
     } catch (err) {
       setPayError(err instanceof Error ? err.message : 'Error al procesar el pago');
@@ -145,9 +114,7 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     }
   };
 
-  const dismissPaymentAlert = () => {
-    setSearchParams({}, { replace: true });
-  };
+  const dismissPaymentAlert = () => setSearchParams({}, { replace: true });
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loading) {
@@ -165,18 +132,12 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
         Mis Pedidos
       </Typography>
 
-      {/* Payment result banners */}
       {paymentStatus && paymentAlerts[paymentStatus] && (
-        <Alert
-          severity={paymentAlerts[paymentStatus].severity}
-          onClose={dismissPaymentAlert}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity={paymentAlerts[paymentStatus].severity} onClose={dismissPaymentAlert} sx={{ mb: 3 }}>
           {paymentAlerts[paymentStatus].text}
         </Alert>
       )}
 
-      {/* Pay action error */}
       {payError && (
         <Alert severity="error" onClose={() => setPayError('')} sx={{ mb: 3 }}>
           {payError}
@@ -205,7 +166,6 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
                 sx={isPending ? { borderColor: 'warning.main', borderWidth: 1.5 } : undefined}
               >
                 <CardContent sx={{ p: 3 }}>
-                  {/* Header row */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
                     <Box>
                       <Typography variant="body2" color="text.secondary" fontSize={12}>
@@ -222,16 +182,11 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
                   <Divider sx={{ mb: 2 }} />
 
-                  {/* Items */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
                     {order.items?.map(item => (
                       <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         {item.product_image && (
-                          <Avatar
-                            src={item.product_image}
-                            variant="rounded"
-                            sx={{ width: 44, height: 44, flexShrink: 0 }}
-                          />
+                          <Avatar src={item.product_image} variant="rounded" sx={{ width: 44, height: 44, flexShrink: 0 }} />
                         )}
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="body2" noWrap>{item.product_name}</Typography>
@@ -248,7 +203,6 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
                   <Divider sx={{ mb: 2 }} />
 
-                  {/* Footer row */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                     <Box>
                       <Typography variant="subtitle1" fontWeight={700}>
@@ -263,26 +217,25 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
                     {isPending && (
                       <>
-                      <Button
-                        variant="contained"
-                        color="warning"
-                        size="small"
-                        disabled={isPaying}
-                        startIcon={isPaying ? <CircularProgress size={14} color="inherit" /> : <PaymentIcon />}
-                        onClick={() => handlePay(order)}
-                      >
-                        {isPaying ? 'Redirigiendo…' : 'Completar pago'}
-                      </Button>
-                     <Button
-  color="error"
-  onClick={() => {
-    setSelectedOrder(order);
-    setOpenDialog(true);
-  }}
->
-  Cancelar
-</Button>
-
+                        <Button
+                          variant="contained"
+                          color="warning"
+                          size="small"
+                          disabled={isPaying}
+                          startIcon={isPaying ? <CircularProgress size={14} color="inherit" /> : <PaymentIcon />}
+                          onClick={() => handlePay(order)}
+                        >
+                          {isPaying ? 'Redirigiendo…' : 'Completar pago'}
+                        </Button>
+                        <Button
+                          color="error"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setOpenDialog(true);
+                          }}
+                        >
+                          Cancelar
+                        </Button>
                       </>
                     )}
                   </Box>
@@ -293,27 +246,21 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
         </Box>
       )}
     </Container>
+
     <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
       <DialogTitle>Cancelar pedido</DialogTitle>
-
       <DialogContent>
         <DialogContentText>
           ¿Estás seguro que querés cancelar este pedido?
         </DialogContentText>
       </DialogContent>
-
       <DialogActions>
-        <Button onClick={() => setOpenDialog(false)}>
-          Volver
-        </Button>
-
+        <Button onClick={() => setOpenDialog(false)}>Volver</Button>
         <Button
           color="error"
           variant="contained"
           onClick={async () => {
-            if (selectedOrder) {
-              await handleCancel(selectedOrder);
-            }
+            if (selectedOrder) await handleCancel(selectedOrder);
             setOpenDialog(false);
           }}
         >
@@ -321,7 +268,6 @@ const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
         </Button>
       </DialogActions>
     </Dialog>
-  </>
-    
+    </>
   );
 }
