@@ -27,7 +27,7 @@ export default function ProductFormPage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState('');
+  // const [fileName, setFileName] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -96,7 +96,7 @@ export default function ProductFormPage() {
 
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
-    setFileName(selectedFile.name);
+    // setFileName(selectedFile.name);
 
     // Preview instantáneo
     const preview = URL.createObjectURL(selectedFile);
@@ -130,7 +130,7 @@ export default function ProductFormPage() {
       }));
 
       setFile(null);
-      setFileName('');
+      // setFileName('');
 
     } catch (err: any) {
       setError(err.message);
