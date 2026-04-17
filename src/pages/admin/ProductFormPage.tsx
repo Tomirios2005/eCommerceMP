@@ -1,10 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Box, Typography, Button, Card, CardContent, Grid,
-  TextField, Select, MenuItem, FormControl, InputLabel,
-  FormControlLabel, Switch, CircularProgress, Alert, Divider
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormControlLabel,
+  Switch,
+  CircularProgress,
+  Alert,
+  Divider,
+  GridLegacy as Grid,                    // ← Agregado
 } from '@mui/material';
+
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
@@ -27,7 +41,6 @@ export default function ProductFormPage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [file, setFile] = useState<File | null>(null);
-  // const [fileName, setFileName] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -96,9 +109,7 @@ export default function ProductFormPage() {
 
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
-    // setFileName(selectedFile.name);
 
-    // Preview instantáneo
     const preview = URL.createObjectURL(selectedFile);
     setForm(prev => ({ ...prev, main_image: preview }));
   };
@@ -118,11 +129,9 @@ export default function ProductFormPage() {
         .from('images')
         .upload(filePath, file);
 
-      if (uploadError){ console.log(uploadError); throw uploadError};
+      if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
 
       setForm(prev => ({
         ...prev,
@@ -130,14 +139,13 @@ export default function ProductFormPage() {
       }));
 
       setFile(null);
-      // setFileName('');
-
     } catch (err: any) {
       setError(err.message);
     } finally {
       setUploading(false);
     }
   };
+
   const createNewCategory = async () => {
     const name = prompt('Nombre de la nueva categoría');
     if (!name) return;
@@ -153,7 +161,6 @@ export default function ProductFormPage() {
 
       setCategories(prev => [...prev, data]);
       setForm(prev => ({ ...prev, category_id: data.id }));
-
     } catch (err: any) {
       alert('Error al crear categoría: ' + err.message);
     }
@@ -201,7 +208,6 @@ export default function ProductFormPage() {
       if (error) throw error;
 
       navigate('/admin/products');
-
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -227,102 +233,41 @@ export default function ProductFormPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Box component="form" onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
+        <Grid container spacing={3}>   {/* ← Línea corregida */}
 
           {/* IZQUIERDA */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={8}>   {/* ← Línea corregida */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <TextField
-                  fullWidth
-                  label="Nombre"
-                  value={form.name}
-                  onChange={handleChange('name')}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Slug"
-                  value={form.slug}
-                  onChange={handleChange('slug')}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Descripción"
-                  value={form.description}
-                  onChange={handleChange('description')}
-                />
+                <TextField fullWidth label="Nombre" value={form.name} onChange={handleChange('name')} sx={{ mb: 2 }} />
+                <TextField fullWidth label="Slug" value={form.slug} onChange={handleChange('slug')} sx={{ mb: 2 }} />
+                <TextField fullWidth multiline rows={4} label="Descripción" value={form.description} onChange={handleChange('description')} />
               </CardContent>
             </Card>
 
             <Card>
               <CardContent>
-                <TextField
-                  fullWidth
-                  label="Precio"
-                  type="number"
-                  value={form.price}
-                  onChange={handleChange('price')}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Precio Comparación"
-                  type="number"
-                  value={form.compare_price}
-                  onChange={handleChange('compare_price')}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Stock"
-                  type="number"
-                  value={form.stock}
-                  onChange={handleChange('stock')}
-                />
+                <TextField fullWidth label="Precio" type="number" value={form.price} onChange={handleChange('price')} sx={{ mb: 2 }} />
+                <TextField fullWidth label="Precio Comparación" type="number" value={form.compare_price} onChange={handleChange('compare_price')} sx={{ mb: 2 }} />
+                <TextField fullWidth label="Stock" type="number" value={form.stock} onChange={handleChange('stock')} />
               </CardContent>
             </Card>
           </Grid>
 
           {/* DERECHA */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4}>   {/* ← Línea corregida */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Imagen Principal
-                </Typography>
+                <Typography variant="h6" gutterBottom>Imagen Principal</Typography>
 
                 {form.main_image ? (
                   <Box
                     component="img"
                     src={form.main_image}
-                    sx={{
-                      width: '100%',
-                      height: 200,
-                      objectFit: 'cover',
-                      borderRadius: 2,
-                      mb: 2,
-                    }}
+                    sx={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 2, mb: 2 }}
                   />
                 ) : (
-                  <Box
-                    sx={{
-                      height: 200,
-                      bgcolor: 'grey.200',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      mb: 2,
-                      borderRadius: 2,
-                    }}
-                  >
+                  <Box sx={{ height: 200, bgcolor: 'grey.200', display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, borderRadius: 2 }}>
                     <AddPhotoAlternateIcon fontSize="large" />
                   </Box>
                 )}
@@ -348,7 +293,7 @@ export default function ProductFormPage() {
               <CardContent>
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Categoría</InputLabel>
-                  <Select required
+                  <Select
                     value={form.category_id}
                     label="Categoría"
                     onChange={handleChange('category_id')}
@@ -359,10 +304,7 @@ export default function ProductFormPage() {
                         {cat.name}
                       </MenuItem>
                     ))}
-                    <MenuItem 
-                      onClick={createNewCategory}
-                    >nueva</MenuItem>
-                    
+                    <MenuItem onClick={createNewCategory}>+ Nueva categoría</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -370,9 +312,7 @@ export default function ProductFormPage() {
                   control={
                     <Switch
                       checked={form.is_active}
-                      onChange={(e) =>
-                        setForm(prev => ({ ...prev, is_active: e.target.checked }))
-                      }
+                      onChange={(e) => setForm(prev => ({ ...prev, is_active: e.target.checked }))}
                     />
                   }
                   label="Activo"
@@ -382,16 +322,10 @@ export default function ProductFormPage() {
 
             <Divider sx={{ my: 2 }} />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disabled={saving}
-            >
-              {saving ? <CircularProgress size={20} /> : isEdit ? 'Guardar' : 'Crear'}
+            <Button type="submit" fullWidth variant="contained" disabled={saving}>
+              {saving ? <CircularProgress size={20} /> : isEdit ? 'Guardar Cambios' : 'Crear Producto'}
             </Button>
           </Grid>
-
         </Grid>
       </Box>
     </Box>
