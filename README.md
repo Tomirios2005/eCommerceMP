@@ -101,13 +101,10 @@ node index.js
 El backend Express requiere configuración manual de JWT
 Supabase simplifica autenticación pero limita control backend
 No mezclar ambos sistemas de auth al mismo tiempo
-🚀 Próximas mejoras
-💳 Integración con pagos (Stripe / MercadoPago)
+💳 Integración con pagos (MercadoPago)
 📦 Gestión de stock
-📊 Panel admin avanzado
-🔄 Refresh tokens automático
+📊 Panel admin
 🧾 Historial de compras
-📌 Autor
 
 Tomás Ríos
 Desarrollador Full Stack
