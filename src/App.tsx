@@ -17,6 +17,7 @@ import DashboardPage from './pages/admin/DashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
 import ProductFormPage from './pages/admin/ProductFormPage';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import PopupCallbackPage from './pages/auth/PopupCallbackPage';
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/auth/popup-callback" element={<PopupCallbackPage />} />
             </Routes>
           </CartProvider>
         </AuthProvider>

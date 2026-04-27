@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -28,26 +28,48 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data,error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : error.message);
       setLoading(false);
-    } else {
+    } else if (!error) {
+      const token=data.session?.access_token;
+      if(token) localStorage.setItem('sb-access-token', token);
       navigate(from, { replace: true });
     }
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
+    const {data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}${from}` },
+      options: { redirectTo: `${window.location.origin}/auth/popup-callback`,       skipBrowserRedirect: true,
+    },
     });
     if (error) {
       setError(error.message);
       setGoogleLoading(false);
+      return;
     }
+    if(data?.url) {
+      window.open(data.url,
+        'googleLogin',
+        'width=500,height=700'
+      );
+    }
+    setGoogleLoading(false);
   };
+  useEffect(() => {
+    const listener=(event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'google-login-success') {
+        navigate(from, { replace: true });
+      }
+        
+    }
+    window.addEventListener("message", listener);
+        return () => window.removeEventListener("message", listener);
+  }, [navigate, from]);
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', p: 2 }}>

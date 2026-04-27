@@ -6,24 +6,29 @@ const supabase = createClient(
 );
 
 async function auth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authorization header missing or malformed' });
+    }
 
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
+    const token = authHeader.split(' ')[1];
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error || !data?.user) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+
+    req.user = {
+      id: data.user.id,
+      email: data.user.email,
+      role: data.user.role ?? 'user' // opcional, si manejás roles
+    };
+
+    next();
+  } catch (err) {
+    res.status(500).json({ message: 'Auth middleware error', details: err.message });
   }
-
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-
-  req.user = {
-    id: data.user.id,
-    email: data.user.email
-  };
-
-  next();
 }
 
 module.exports = auth;
