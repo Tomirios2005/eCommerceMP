@@ -70,7 +70,7 @@ export default function LoginPage() {
       if (tokens?.access_token) {
         try {
           // Inyectamos los tokens en el cliente de Supabase de la ventana principal
-          const { data, error } = await supabase.auth.setSession({
+          const {error } = await supabase.auth.setSession({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token || '',
           });
