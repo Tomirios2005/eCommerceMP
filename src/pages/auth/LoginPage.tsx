@@ -60,16 +60,42 @@ export default function LoginPage() {
     setGoogleLoading(false);
   };
   useEffect(() => {
-    const listener=(event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'google-login-success') {
-        navigate(from, { replace: true });
+  const listener = async (event: MessageEvent) => {
+    // Validamos origen por estricta seguridad
+    if (event.origin !== window.location.origin) return;
+    
+    if (event.data?.type === 'google-login-success') {
+      const tokens = event.data.tokens;
+      
+      if (tokens?.access_token) {
+        try {
+          // Inyectamos los tokens en el cliente de Supabase de la ventana principal
+          const { data, error } = await supabase.auth.setSession({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token || '',
+          });
+
+          if (error) throw error;
+
+          // Si guardabas el token de forma manual para otra API, lo hacés acá
+          localStorage.setItem('sb-access-token', tokens.access_token);
+          
+          console.log('Sesión establecida con éxito en la ventana principal.');
+        } catch (err) {
+          console.error('Error al establecer la sesión:', err);
+          setError('No se pudo sincronizar la sesión de Google.');
+          return;
+        }
       }
-        
+      
+      // Una vez que la sesión impactó en la ventana madre, redirigimos
+      navigate(from, { replace: true });
     }
-    window.addEventListener("message", listener);
-        return () => window.removeEventListener("message", listener);
-  }, [navigate, from]);
+  };
+  
+  window.addEventListener("message", listener);
+  return () => window.removeEventListener("message", listener);
+}, [navigate, from]);
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', p: 2 }}>

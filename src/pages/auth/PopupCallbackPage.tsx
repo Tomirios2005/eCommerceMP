@@ -1,17 +1,50 @@
 import { useEffect } from "react";
-import { supabase } from "../../lib/supabase";
 
 export default function PopupCallbackPage() {
-    useEffect(() => {
-        const finishLogin=async () => {
-            await supabase.auth.getSession()
-        if(window.opener) {
-            console.log('Notificando a la ventana principal del éxito del login'+window.location.origin);
-            window.opener?.postMessage({ type: 'google-login-success' }, window.location.origin);
-        }
-        window.close();
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const params = new URLSearchParams();
+
+    for (const [key, value] of searchParams.entries()) {
+      params.set(key, value);
     }
-    finishLogin();
-    }, []);
-    return <p>ingresando...</p>;
+    for (const [key, value] of hashParams.entries()) {
+      params.set(key, value);
+    }
+
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    const closePopup = () => {
+      window.close();
+      if (!window.closed) {
+        window.open("", "_self");
+        window.close();
+      }
+    };
+
+    if (window.opener && accessToken) {
+      console.log('Notificando tokens a la ventana principal...');
+
+      window.opener.postMessage(
+        {
+          type: 'google-login-success',
+          tokens: {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          },
+        },
+        window.location.origin
+      );
+    }
+
+    closePopup();
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
+      <p>Sincronizando sesión de forma segura...</p>
+    </div>
+  );
 }
