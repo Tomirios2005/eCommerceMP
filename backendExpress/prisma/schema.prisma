@@ -103,7 +103,6 @@ model orders {
   total                     Decimal   @default(0)
   subtotal                  Decimal   @default(0)
   shipping_cost             Decimal   @default(0)
-  payment_id                String?   @default("")
   payment_method            String?   @default("")
   mercadopago_preference_id String?   @default("")
   mercadopago_payment_id    String?   @default("")
