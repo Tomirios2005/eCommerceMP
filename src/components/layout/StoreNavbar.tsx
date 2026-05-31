@@ -19,13 +19,14 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-
+import { arePendingOrders } from '../../services/orderService';
+import { useEffect } from 'react';
 export default function StoreNavbar() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const { totalItems, openCart } = useCart();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
+  const [hayPedidosPendientes, setHayPedidosPendientes] = useState(false); // Estado para controlar si hay pedidos pendientes
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
@@ -34,7 +35,17 @@ export default function StoreNavbar() {
     await signOut();
     navigate('/');
   };
-
+  const updatePendingOrdersStatus = async () => {
+    if (user) {
+      const pendientes = await arePendingOrders(user.id);
+      setHayPedidosPendientes(pendientes);
+    }
+  };
+  useEffect(() => {
+    updatePendingOrdersStatus();
+    const interval = setInterval(updatePendingOrdersStatus, 10000); // Verifica cada 10 segundos
+    return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
+  }, [user]); // Se ejecuta cada vez que cambia el usuario (login/logout) para actualizar el estado de pedidos pendientes
   return (
     <AppBar position="sticky" color="primary">
       <Toolbar>
@@ -55,11 +66,26 @@ export default function StoreNavbar() {
           {user ? (
             <>
               <IconButton onClick={handleMenuOpen} color="inherit">
-                {profile?.avatar_url ? (
-                  <Avatar src={profile.avatar_url} sx={{ width: 32, height: 32 }} />
-                ) : (
-                  <AccountCircleIcon />
-                )}
+                <Badge
+                  badgeContent="!"
+                  color="error" // Hace que la burbuja sea roja (puedes usar "warning" para amarillo/naranja)
+                  invisible={!hayPedidosPendientes} // Se oculta si NO hay pedidos pendientes
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      height: 16,
+                      minWidth: 16,
+                      padding: '0 4px',
+                    }
+                  }}
+                >
+                  {profile?.avatar_url ? (
+                    <Avatar src={profile.avatar_url} sx={{ width: 32, height: 32 }} />
+                  ) : (
+                    <AccountCircleIcon />
+                  )}
+                </Badge>
               </IconButton>
               <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                 <Box sx={{ px: 2, py: 1 }}>
@@ -67,10 +93,28 @@ export default function StoreNavbar() {
                   <Typography variant="caption" color="text.secondary">{user.email}</Typography>
                 </Box>
                 <Divider />
-                <MenuItem onClick={() => { handleMenuClose(); navigate('/orders'); }}>
-                  <ReceiptLongIcon fontSize="small" sx={{ mr: 1 }} />
-                  Mis Pedidos
-                </MenuItem>
+               <MenuItem 
+  onClick={() => { handleMenuClose(); navigate('/orders'); }}
+  sx={{ justifyContent: 'space-between' }} // Alinea el badge a la derecha si lo deseas
+>
+  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <ReceiptLongIcon fontSize="small" sx={{ mr: 1 }} />
+    Mis Pedidos
+  </Box>
+  
+  {/* Si hay pedidos, muestra el círculo rojo indicador */}
+  {hayPedidosPendientes && (
+    <Box 
+      sx={{ 
+        width: 8, 
+        height: 8, 
+        backgroundColor: 'error.main', 
+        borderRadius: '50%',
+        marginLeft: 2 
+      }} 
+    />
+  )}
+</MenuItem>
                 {isAdmin && (
                   <MenuItem onClick={() => { handleMenuClose(); navigate('/admin'); }}>
                     <AdminPanelSettingsIcon fontSize="small" sx={{ mr: 1 }} />

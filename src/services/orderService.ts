@@ -142,3 +142,17 @@ export async function createPaymentPreference(
 
   return res.json();
 }
+export async function arePendingOrders(userId: string): Promise<boolean> {
+  if (isExpress()) {
+    return apiRequest<boolean>('/api/orders/pending');
+  }
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .limit(1)
+    .single();
+  if (error && error.code !== 'PGRST116') throw new Error(error.message);
+  return !!data;
+}
