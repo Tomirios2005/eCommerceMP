@@ -63,7 +63,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const allImages = [product.images?.[0]?.url, ...(product.images?.map(i => i.url) || [])].filter(Boolean);
+  const allImages = [product.images?.[0]?.url, ...(product.images?.map(i => i.url) || [])].filter((img): img is string => Boolean(img));
   const discount = product.compare_price ? Math.round((1 - product.price / product.compare_price) * 100) : null;
 
   return (
