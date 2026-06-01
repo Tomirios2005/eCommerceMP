@@ -45,7 +45,7 @@ export default function CartDrawer() {
                 {items.map(item => (
                   <Box key={item.product.id} sx={{ display: 'flex', gap: 1.5 }}>
                     <Avatar
-                      src={item.product.main_image}
+                      src={item.product.images?.[0]?.url}
                       variant="rounded"
                       sx={{ width: 72, height: 72, flexShrink: 0 }}
                     />

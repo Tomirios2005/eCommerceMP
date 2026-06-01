@@ -69,7 +69,7 @@ export default function CheckoutPage() {
         items:        items.map(item => ({
           product_id:    item.product.id,
           product_name:  item.product.name,
-          product_image: item.product.main_image ?? "",
+          product_image: item.product.images?.[0]?.url ?? "",
           quantity:      item.quantity,
           unit_price:    item.product.price,
           total_price:   item.product.price * item.quantity,
@@ -77,7 +77,17 @@ export default function CheckoutPage() {
       });
 
       // ── 3. Create Mercado Pago preference ───────────────────────────────────
-      const mpData = await createPaymentPreference(orderId, items, total, session.access_token);
+      const mpItems = items.map(item => ({
+        product: {
+          id: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          product_image: item.product.images?.[0]?.url ?? "",
+        },
+        quantity: item.quantity,
+      }));
+
+      const mpData = await createPaymentPreference(orderId, mpItems, total, session.access_token);
 
       // ── 4. Clear cart then redirect to payment ──────────────────────────────
       await clearCart();
@@ -174,7 +184,7 @@ export default function CheckoutPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
                 {items.map(item => (
                   <Box key={item.product.id} sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-                    <Avatar src={item.product.main_image} variant="rounded" sx={{ width: 56, height: 56 }} />
+                    <Avatar src={item.product.images?.[0]?.url} variant="rounded" sx={{ width: 56, height: 56 }} />
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2" fontWeight={500}>{item.product.name}</Typography>
                       <Typography variant="caption" color="text.secondary">x{item.quantity}</Typography>

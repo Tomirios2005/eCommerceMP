@@ -55,7 +55,6 @@ export interface Database {
           compare_price: number | null;
           stock: number;
           sku: string;
-          main_image: string;
           category_id: string | null;
           is_active: boolean;
           created_at: string;
@@ -70,7 +69,6 @@ export interface Database {
           compare_price?: number | null;
           stock?: number;
           sku?: string;
-          main_image?: string;
           category_id?: string | null;
           is_active?: boolean;
           created_at?: string;
@@ -84,7 +82,6 @@ export interface Database {
           compare_price?: number | null;
           stock?: number;
           sku?: string;
-          main_image?: string;
           category_id?: string | null;
           is_active?: boolean;
           updated_at?: string;

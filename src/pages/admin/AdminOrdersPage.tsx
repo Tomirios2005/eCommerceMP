@@ -178,10 +178,10 @@ export default function AdminOrdersPage() {
                   <Divider sx={{ my: 2 }} />
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>Dirección de envío</Typography>
                   {(() => {
-                    const addr = selected.shipping_address as { full_name?: string; street?: string; city?: string; state?: string; zip_code?: string };
+                    const addr = selected.shipping_address as { full_name?: string; street?: string; city?: string; state?: string; zip_code?: string, phone?: string };
                     return (
                       <Typography variant="body2" color="text.secondary">
-                        {addr.full_name} — {addr.street}, {addr.city}, {addr.state} ({addr.zip_code})
+                        {addr.full_name} — {addr.street}, {addr.city}, {addr.state} ({addr.zip_code}), Tel: {addr.phone}
                       </Typography>
                     );
                   })()}

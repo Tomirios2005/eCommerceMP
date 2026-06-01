@@ -29,7 +29,7 @@ export default function ProductCard({ product }: Props) {
         <CardMedia
           component="img"
           height={220}
-          image={product.main_image || 'https://via.placeholder.com/400x220?text=Sin+imagen'}
+          image={product.images?.[0]?.url || 'https://via.placeholder.com/400x220?text=Sin+imagen'}
           alt={product.name}
           sx={{ objectFit: 'cover' }}
         />

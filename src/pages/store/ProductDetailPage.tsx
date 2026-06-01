@@ -33,7 +33,7 @@ export default function ProductDetailPage() {
     getProductBySlug(slug).then(data => {
       if (data) {
         setProduct(data);
-        setSelectedImage(data.main_image);
+        setSelectedImage(data.images?.[0]?.url ||  '');
       }
       setLoading(false);
     });
@@ -63,7 +63,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const allImages = [product.main_image, ...(product.images?.map(i => i.url) || [])].filter(Boolean);
+  const allImages = [product.images?.[0]?.url, ...(product.images?.map(i => i.url) || [])].filter(Boolean);
   const discount = product.compare_price ? Math.round((1 - product.price / product.compare_price) * 100) : null;
 
   return (

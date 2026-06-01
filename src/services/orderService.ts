@@ -115,7 +115,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
  */
 export async function createPaymentPreference(
   orderId: string,
-  items: Array<{ product: { id: string; name: string; price: number; main_image: string }; quantity: number }>,
+  items: Array<{ product: { id: string; name: string; price: number; product_image: string }; quantity: number }>,
   total: number,
   sessionToken: string
 ): Promise<{ init_point: string; sandbox_init_point?: string }> {
@@ -152,7 +152,7 @@ export async function arePendingOrders(userId: string): Promise<boolean> {
     .eq('user_id', userId)
     .eq('status', 'pending')
     .limit(1)
-    .single();
+    .maybeSingle();
   if (error && error.code !== 'PGRST116') throw new Error(error.message);
   return !!data;
 }

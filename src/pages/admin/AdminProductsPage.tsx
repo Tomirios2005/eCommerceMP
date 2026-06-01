@@ -115,10 +115,11 @@ export default function AdminProductsPage() {
                     </TableRow>
                   ) : (
                     products.map(product => (
+                      
                       <TableRow key={product.id} hover>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar src={product.main_image} variant="rounded" sx={{ width: 48, height: 48 }} />
+                            <Avatar src={product.images?.[0]?.url} variant="rounded" sx={{ width: 48, height: 48 }} />
                             <Box>
                               <Typography variant="body2" fontWeight={500}>{product.name}</Typography>
                               <Typography variant="caption" color="text.secondary">{product.sku}</Typography>

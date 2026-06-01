@@ -49,7 +49,6 @@ model products {
   compare_price  Decimal?
   stock          Int       @default(0)
   sku            String?   @default("")
-  main_image     String?   @default("")
   is_active      Boolean   @default(true)
 
   category_id    String?

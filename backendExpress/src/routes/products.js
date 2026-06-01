@@ -62,7 +62,7 @@ router.get('/id/:id', async (req, res) => {
 // ── POST /api/products – Create product (admin) ───────────────────────────────
 router.post('/', auth, admin, async (req, res) => {
   try {
-    const { name, slug, description, price, compare_price, stock, sku, main_image, category_id, is_active } = req.body;
+    const { name, slug, description, price, compare_price, stock, sku,category_id, is_active } = req.body;
     const product = await prisma.products.create({
       data: {
         name,
@@ -72,7 +72,6 @@ router.post('/', auth, admin, async (req, res) => {
         compare_price: compare_price ?? null,
         stock: stock ?? 0,
         sku: sku ?? '',
-        main_image: main_image ?? '',
         category_id: category_id || null,
         is_active: is_active ?? true,
       },

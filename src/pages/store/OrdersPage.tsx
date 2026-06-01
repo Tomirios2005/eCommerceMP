@@ -94,14 +94,23 @@ export default function OrdersPage() {
           id:         item.product_id ?? '',
           name:       item.product_name,
           price:      item.unit_price,
-          main_image: item.product_image ?? '',
+          main_image:     item.product_image ?? '',
+        },
+        quantity: item.quantity,
+      }));
+      const mpItems= items.map(item => ({
+        product: {
+          id:         item.product.id,
+          name:       item.product.name,
+          price:      item.product.price,
+          product_image: item.product.main_image,
         },
         quantity: item.quantity,
       }));
 
       const data = await createPaymentPreference(
         order.id,
-        items,
+        mpItems,
         order.total,
         session.access_token
       );

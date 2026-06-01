@@ -23,7 +23,6 @@ export interface Product {
   compare_price: number | null;
   stock: number;
   sku: string;
-  main_image: string;
   category_id: string | null;
   is_active: boolean;
   created_at: string;

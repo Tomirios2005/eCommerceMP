@@ -17,10 +17,10 @@ export async function getProducts(filters?: {
 
   let query = supabase
     .from('products')
-    .select('*, category:categories(id,name), images:product_images(*)')
+    .select('*, category:categories(id,name), images:product_images(id, product_id, url, alt, sort_order,created_at)')
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
-
+    .order('created_at', { ascending: false })
+    
   if (filters?.category) query = query.eq('category_id', filters.category);
   if (filters?.search)   query = query.ilike('name', `%${filters.search}%`);
 
@@ -54,7 +54,7 @@ export async function getAdminProducts(search?: string): Promise<Product[]> {
 
   let query = supabase
     .from('products')
-    .select('*, category:categories(id,name)')
+    .select('*, category:categories(id,name), images:product_images(id, product_id, url, alt, sort_order,created_at)')
     .order('created_at', { ascending: false });
   if (search) query = query.ilike('name', `%${search}%`);
 
@@ -79,16 +79,16 @@ export async function getProductById(id: string): Promise<Product | null> {
   return data as Product | null;
 }
 
-export async function createProduct(data: Partial<Product>): Promise<void> {
+export async function createProduct(data: Partial<Product>): Promise<string> {
   if (isExpress()) {
     await apiRequest('/api/products', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return;
   }
-  const { error } = await supabase.from('products').insert([data]);
+  const { error, data: newData } = await supabase.from('products').insert([data]).select().single();
   if (error) throw new Error(error.message);
+  return newData.id;
 }
 
 export async function updateProduct(id: string, data: Partial<Product>): Promise<void> {
