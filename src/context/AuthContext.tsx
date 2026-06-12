@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../lib/types';
 
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+  //auth  handled by supabase auth state change listener
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);

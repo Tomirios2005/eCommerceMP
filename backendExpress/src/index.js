@@ -15,7 +15,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-
+app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/products',   productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/cart',       cartRoutes);

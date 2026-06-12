@@ -62,7 +62,7 @@ router.get('/id/:id', async (req, res) => {
 // ── POST /api/products – Create product (admin) ───────────────────────────────
 router.post('/', auth, admin, async (req, res) => {
   try {
-    const { name, slug, description, price, compare_price, stock, sku,category_id, is_active } = req.body;
+    const { name, slug, description, price, compare_price, stock, sku,category_id, is_active, product_images } = req.body;
     const product = await prisma.products.create({
       data: {
         name,
@@ -74,8 +74,19 @@ router.post('/', auth, admin, async (req, res) => {
         sku: sku ?? '',
         category_id: category_id || null,
         is_active: is_active ?? true,
+        
+        // Usamos 'createMany' para meter todas las imágenes juntas de forma anidada
+        product_images: {
+          createMany: {
+            data: (product_images || []).map(img => ({
+              url: img.url,
+              alt_text: img.alt_text ?? '',
+              sort_order: img.sort_order ?? 0
+            }))
+          }
+        }
       },
-      include: { categories: true },
+      include: { categories: true, product_images: true },
     });
     res.status(201).json(normalizeProduct(product));
   } catch (err) {
@@ -86,7 +97,7 @@ router.post('/', auth, admin, async (req, res) => {
 // ── PUT /api/products/:id – Update product (admin) ───────────────────────────
 router.put('/:id', auth, admin, async (req, res) => {
   try {
-    const { name, slug, description, price, compare_price, stock, sku, main_image, category_id, is_active } = req.body;
+    const { name, slug, description, price, compare_price, stock, sku,category_id, is_active, product_images } = req.body;
     const product = await prisma.products.update({
       where: { id: req.params.id },
       data: {
@@ -97,7 +108,6 @@ router.put('/:id', auth, admin, async (req, res) => {
         compare_price: compare_price ?? null,
         stock,
         sku,
-        main_image,
         category_id: category_id || null,
         is_active,
         updated_at: new Date(),

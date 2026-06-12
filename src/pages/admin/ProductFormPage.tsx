@@ -21,6 +21,7 @@ import {
   Chip,
   GridLegacy as Grid,
 } from '@mui/material';
+import { isExpress } from '../../services/config';
 
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -74,28 +75,28 @@ export default function ProductFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
 
-  const [loading,   setLoading]   = useState(isEdit);
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState('');
+  const [loading, setLoading] = useState(isEdit);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const [categories, setCategories] = useState<Category[]>([]);
   // Centralizamos todas las imágenes en una sola lista (Principales y Secundarias)
-  const [images,     setImages]     = useState<ProductImage[]>([]);
+  const [images, setImages] = useState<ProductImage[]>([]);
 
   // Drag-and-drop state
   const dragIndexRef = useRef<number | null>(null);
-  const [dragOver,   setDragOver]   = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
 
   const [form, setForm] = useState({
-    name:          '',
-    slug:          '',
-    description:   '',
-    price:         '',
+    name: '',
+    slug: '',
+    description: '',
+    price: '',
     compare_price: '',
-    stock:         '',
-    sku:           '',
-    category_id:   '',
-    is_active:     true,
+    stock: '',
+    sku: '',
+    category_id: '',
+    is_active: true,
   });
 
   // ── Initial load ────────────────────────────────────────────────────────────
@@ -111,27 +112,36 @@ export default function ProductFormPage() {
       if (data) {
         setForm({
           ...data,
-          price:         String(data.price),
+          price: String(data.price),
           compare_price: data.compare_price ? String(data.compare_price) : '',
-          stock:         String(data.stock),
-          category_id:   data.category_id ?? '',
+          stock: String(data.stock),
+          category_id: data.category_id ?? '',
         });
+        if (isExpress()) {
+          // En modo Express, las imágenes ya vienen incluidas en el producto
+          setImages(data.images?.map(img => ({ id:img.id, url: img.url, sort_order: img.sort_order })) || []);
 
-        // Traemos todas las imágenes ordenadas por sort_order
-        const { data: imgs, error: imgErr } = await supabase
-          .from('product_images')
-          .select('id, url, sort_order')
-          .eq('product_id', id)
-          .order('sort_order', { ascending: true });
+        } else {
 
-        if (!imgErr && imgs) {
-          setImages(imgs.map(img => ({ id: img.id, url: img.url, sort_order: img.sort_order })));
+
+          // Traemos todas las imágenes ordenadas por sort_order
+          const { data: imgs, error: imgErr } = await supabase
+            .from('product_images')
+            .select('id, url, sort_order')
+            .eq('product_id', id)
+            .order('sort_order', { ascending: true });
+
+          if (!imgErr && imgs) {
+            setImages(imgs.map(img => ({ id: img.id, url: img.url, sort_order: img.sort_order })));
+          }else {
+          setError('Producto no encontrado');
         }
-      } else {
-        setError('Producto no encontrado');
+        } 
+        setLoading(false);
       }
-      setLoading(false);
+
     });
+
   }, [id, isEdit]);
 
   // ── Form helpers ────────────────────────────────────────────────────────────
@@ -149,14 +159,14 @@ export default function ProductFormPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    
+
     const newImgs: ProductImage[] = Array.from(e.target.files).map((f, i) => ({
-      url:        URL.createObjectURL(f),
+      url: URL.createObjectURL(f),
       sort_order: images.length + i,
-      file:       f,
-      preview:    URL.createObjectURL(f),
+      file: f,
+      preview: URL.createObjectURL(f),
     }));
-    
+
     setImages(prev => [...prev, ...newImgs]);
     e.target.value = '';
   };
@@ -190,7 +200,7 @@ export default function ProductFormPage() {
     setImages(prev => {
       const img = prev[index];
       if (img.preview) URL.revokeObjectURL(img.preview);
-      
+
       const filtered = prev.filter((_, i) => i !== index);
       // Re-indexamos los sort_order para asegurar que no queden baches y que el primero sea 0
       return filtered.map((item, i) => ({ ...item, sort_order: i }));
@@ -268,7 +278,7 @@ export default function ProductFormPage() {
       .filter(img => !img.file) // Solo las que ya están subidas de manera efectiva en Storage
       .map(img => ({
         product_id: productId,
-        url:        img.url,
+        url: img.url,
         sort_order: img.sort_order, // Guardamos la secuencia numérica limpia
       }));
 
@@ -300,15 +310,15 @@ export default function ProductFormPage() {
 
     try {
       const productData = {
-        name:          form.name,
-        slug:          form.slug,
-        description:   form.description,
-        price:         Number(form.price),
+        name: form.name,
+        slug: form.slug,
+        description: form.description,
+        price: Number(form.price),
         compare_price: form.compare_price ? Number(form.compare_price) : null,
-        stock:         Number(form.stock) || 0,
-        sku:           form.sku,
-        category_id:   form.category_id || null,
-        is_active:     form.is_active,
+        stock: Number(form.stock) || 0,
+        sku: form.sku,
+        category_id: form.category_id || null,
+        is_active: form.is_active,
         // Ya no mandamos el campo main_image al producto!
       };
 
@@ -367,7 +377,7 @@ export default function ProductFormPage() {
                   Información básica
                 </Typography>
                 <TextField fullWidth label="Nombre" value={form.name} onChange={handleChange('name')} sx={{ mb: 2 }} />
-                <TextField fullWidth label="Slug"   value={form.slug} onChange={handleChange('slug')}  sx={{ mb: 2 }} />
+                <TextField fullWidth label="Slug" value={form.slug} onChange={handleChange('slug')} sx={{ mb: 2 }} />
                 <TextField fullWidth multiline rows={4} label="Descripción" value={form.description} onChange={handleChange('description')} />
               </CardContent>
             </Card>
@@ -458,8 +468,8 @@ export default function ProductFormPage() {
                           sx={{
                             position: 'relative',
                             border: '2px solid',
-                            borderColor: isMain 
-                              ? 'warning.main' 
+                            borderColor: isMain
+                              ? 'warning.main'
                               : dragOver === index ? 'primary.main' : 'grey.200',
                             borderRadius: 2,
                             overflow: 'hidden',
@@ -501,11 +511,11 @@ export default function ProductFormPage() {
                                 label={isMain ? "Principal" : `#${index + 1}`}
                                 size="small"
                                 color={isMain ? "warning" : "default"}
-                                sx={{ 
-                                  color: 'white', 
-                                  height: 18, 
-                                  fontSize: 10, 
-                                  bgcolor: isMain ? 'warning.main' : 'rgba(0,0,0,0.6)' 
+                                sx={{
+                                  color: 'white',
+                                  height: 18,
+                                  fontSize: 10,
+                                  bgcolor: isMain ? 'warning.main' : 'rgba(0,0,0,0.6)'
                                 }}
                               />
                             </Box>
@@ -528,7 +538,7 @@ export default function ProductFormPage() {
                                   </span>
                                 </Tooltip>
                               )}
-                              
+
                               {!isMain && (
                                 <Tooltip title="Hacer principal">
                                   <IconButton
@@ -592,10 +602,10 @@ export default function ProductFormPage() {
                   <Box
                     component="img"
                     src={mainImage.preview ?? mainImage.url}
-                    sx={{ 
-                      width: '100%', 
-                      height: 220, 
-                      objectFit: 'cover', 
+                    sx={{
+                      width: '100%',
+                      height: 220,
+                      objectFit: 'cover',
                       borderRadius: 2,
                       border: '2px solid',
                       borderColor: 'warning.light'
